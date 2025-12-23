@@ -10,27 +10,78 @@ body {
 }
 
 #toolbar {
-    height: 50px;
-    background-color: #ffffff;
+    height: 80px;
+    /* Increased height for better breathing room */
+    background-color: #f0f2f5;
+    /* Light grey background */
     border-bottom: 1px solid #ccc;
     display: flex;
     align-items: center;
+    /* Center vertically */
     padding: 0 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     z-index: 100;
+    overflow-x: auto;
+    gap: 10px;
+    /* Space between cards */
 }
 
-.tool-group {
+.toolbar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    background-color: #ffffff;
+    /* White card background */
+    border-radius: 8px;
+    /* Rounded corners */
+    border: 1px solid #e1e4e8;
+    /* Subtle border */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    /* Soft shadow */
+    min-width: max-content;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toolbar-section:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.toolbar-section:last-child {
+    border-right: 1px solid #e1e4e8;
+    /* Reset border right override if it existed */
+}
+
+.section-label {
+    font-size: 10px;
+    color: #555;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: 0.8px;
+    border-bottom: 2px solid #f0f0f0;
+    /* Underline for label */
+    padding-bottom: 2px;
+    width: 100%;
+    text-align: center;
+}
+
+.section-content {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+    /* slightly more gap */
+}
+
+/* Remove old tool-group and tool-divider styles if unused, or keep for safety */
+.tool-group {
+    display: none;
 }
 
 .tool-divider {
-    width: 1px;
-    height: 30px;
-    background-color: #ddd;
-    margin: 0 10px;
+    display: none;
 }
 
 button {
@@ -107,7 +158,7 @@ button.active {
 /* Notes Panel */
 #notes-panel {
     position: fixed;
-    top: 60px;
+    top: 80px;
     right: 20px;
     width: 300px;
     height: 400px;

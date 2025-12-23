@@ -50,6 +50,9 @@ A feature-rich Google Chrome extension for viewing, editing, and annotating PDF 
 | **H** | Highlighter |
 | **E** | Eraser |
 | **T** | Text Tool |
+| **I** | Insert Image Tool |
+| **B** | Insert Blank Page |
+| **F** | Toggle Fullscreen |
 | **Ctrl + Z** | Undo |
 | **Ctrl + Y** | Redo |
 | **Ctrl + S** | Save PDF |

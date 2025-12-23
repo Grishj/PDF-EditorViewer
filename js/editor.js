@@ -971,22 +971,31 @@ document.addEventListener('keydown', (e) => {
         switch (key) {
             case 'v':
             case 's':
-                setAllCanvasesTool('select');
+                document.getElementById('tool-select').click();
                 break;
             case 'p':
-                setAllCanvasesTool('pen');
+                document.getElementById('tool-pen').click();
                 break;
             case 'l':
-                setAllCanvasesTool('line');
+                document.getElementById('tool-line').click();
                 break;
             case 'h':
-                setAllCanvasesTool('highlighter');
+                document.getElementById('tool-highlighter').click();
                 break;
             case 'e':
-                setAllCanvasesTool('eraser');
+                document.getElementById('tool-eraser').click();
                 break;
             case 't':
-                setAllCanvasesTool('text');
+                document.getElementById('tool-text').click();
+                break;
+            case 'i':
+                document.getElementById('tool-image').click();
+                break;
+            case 'b':
+                document.getElementById('btn-insert-page').click();
+                break;
+            case 'f':
+                document.getElementById('btn-fullscreen').click();
                 break;
             case 'delete':
             case 'backspace':

@@ -16,87 +16,94 @@
 <body>
 
     <div id="toolbar">
-        <div class="tool-group">
-            <button id="btn-open" title="Open PDF"><i class="fas fa-folder-open"></i></button>
-            <input type="file" id="file-input" accept="application/pdf" style="display: none;">
-            <button id="btn-save" title="Save PDF"><i class="fas fa-save"></i></button>
-            <button id="btn-share" title="Share PDF"><i class="fas fa-share-alt"></i></button>
+        <!-- File Section -->
+        <div class="toolbar-section">
+            <div class="section-label">File</div>
+            <div class="section-content">
+                <button id="btn-open" title="Open PDF"><i class="fas fa-folder-open"></i></button>
+                <input type="file" id="file-input" accept="application/pdf" style="display: none;">
+                <button id="btn-save" title="Save PDF (Ctrl+S)"><i class="fas fa-save"></i></button>
+                <button id="btn-share" title="Share PDF"><i class="fas fa-share-alt"></i></button>
+            </div>
         </div>
 
-        <div class="tool-divider"></div>
-
-        <div class="tool-group">
-            <button class="tool-btn" id="tool-select" title="Select / Move"><i
-                    class="fas fa-mouse-pointer"></i></button>
-
-            <button class="tool-btn" id="tool-pen" title="Pen"><i class="fas fa-pen"></i></button>
-            <button class="tool-btn" id="tool-line" title="Straight Line"><i class="fas fa-slash"></i></button>
-            <button class="tool-btn" id="tool-highlighter" title="Highlighter"><i
-                    class="fas fa-highlighter"></i></button>
-            <button class="tool-btn" id="tool-text" title="Add Text"><i class="fas fa-font"></i></button>
-            <button class="tool-btn" id="tool-image" title="Add Image"><i class="fas fa-image"></i></button>
-            <input type="file" id="image-input" accept="image/*" style="display: none;">
-            <button class="tool-btn" id="tool-eraser" title="Eraser"><i class="fas fa-eraser"></i></button>
+        <!-- Edit Section -->
+        <div class="toolbar-section">
+            <div class="section-label">Edit</div>
+            <div class="section-content">
+                <button id="btn-undo" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                <button id="btn-redo" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+            </div>
         </div>
 
-        <div class="tool-divider"></div>
-
-        <div class="tool-group">
-            <button id="btn-rotate-page" title="Rotate Page (90°)"><i class="fas fa-sync-alt"></i></button>
-            <button id="btn-rotate-all" title="Rotate All"><i class="fas fa-sync"></i></button>
-            <button id="btn-insert-page" title="Insert Blank Page"><i class="fas fa-plus-square"></i></button>
+        <!-- Tools Section -->
+        <div class="toolbar-section">
+            <div class="section-label">Tools</div>
+            <div class="section-content">
+                <button class="tool-btn" id="tool-select" title="Select / Move (V)"><i
+                        class="fas fa-mouse-pointer"></i></button>
+                <button class="tool-btn" id="tool-pen" title="Pen (P)"><i class="fas fa-pen"></i></button>
+                <button class="tool-btn" id="tool-line" title="Straight Line (L)"><i class="fas fa-slash"></i></button>
+                <button class="tool-btn" id="tool-highlighter" title="Highlighter (H)"><i
+                        class="fas fa-highlighter"></i></button>
+                <button class="tool-btn" id="tool-eraser" title="Eraser (E)"><i class="fas fa-eraser"></i></button>
+            </div>
         </div>
 
-        <div class="tool-divider"></div>
-
-        <div class="tool-group">
-            <input type="number" id="page-input" min="1" value="1" style="width: 50px;" title="Go to Page">
-            <span id="page-count">/ 0</span>
+        <!-- Insert Section -->
+        <div class="toolbar-section">
+            <div class="section-label">Insert</div>
+            <div class="section-content">
+                <button class="tool-btn" id="tool-text" title="Add Text (T)"><i class="fas fa-font"></i></button>
+                <button class="tool-btn" id="tool-image" title="Add Image (I)"><i class="fas fa-image"></i></button>
+                <input type="file" id="image-input" accept="image/*" style="display: none;">
+                <button id="btn-insert-page" title="Insert Blank Page (B)"><i class="fas fa-plus-square"></i></button>
+            </div>
         </div>
 
-        <div class="tool-divider"></div>
-
-        <div class="tool-group options-panel">
-            <input type="color" id="color-picker" value="#000000" title="Color">
-            <input type="number" id="brush-size" min="1" max="50" value="2" title="Brush Size" style="width: 50px;">
-            <select id="font-family" title="Font Family"
-                style="height: 30px; border-radius: 4px; border: 1px solid #ccc;">
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Verdana">Verdana</option>
-                <option value="Impact">Impact</option>
-            </select>
+        <!-- Style Section -->
+        <div class="toolbar-section">
+            <div class="section-label">Style</div>
+            <div class="section-content">
+                <input type="color" id="color-picker" value="#000000" title="Color">
+                <input type="number" id="brush-size" min="1" max="50" value="2" title="Brush Size" style="width: 45px;">
+                <select id="font-family" title="Font Family"
+                    style="height: 30px; width: 80px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times</option>
+                    <option value="Courier New">Courier</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Impact">Impact</option>
+                </select>
+            </div>
         </div>
 
-        <div class="tool-divider"></div>
-
-        <div class="tool-group">
-            <button id="btn-scroll-up" title="Scroll Up"><i class="fas fa-arrow-up"></i></button>
-            <button id="btn-auto-scroll" title="Auto Scroll Down"><i class="fas fa-arrow-down"></i></button>
-            <input type="number" id="scroll-speed" min="1" max="100" value="2" title="Scroll Speed"
-                style="width: 50px;">
-
-            <div class="tool-divider"></div>
-
-            <button id="btn-eye-comfort" title="Eye Comfort Mode"><i class="fas fa-eye"></i></button>
-            <input type="color" id="eye-comfort-color" value="#f5deb3" title="Eye Comfort Color"
-                style="width: 30px; padding: 0; border: none; height: 30px; cursor: pointer;">
+        <!-- Page Section -->
+        <div class="toolbar-section">
+            <div class="section-label">Page</div>
+            <div class="section-content">
+                <button id="btn-rotate-page" title="Rotate Page (90°)"><i class="fas fa-sync-alt"></i></button>
+                <button id="btn-rotate-all" title="Rotate All"><i class="fas fa-sync"></i></button>
+                <input type="number" id="page-input" min="1" value="1" style="width: 45px;" title="Go to Page">
+                <span id="page-count" style="font-size: 12px; color: #666;">/ 0</span>
+            </div>
         </div>
 
-        <div class="tool-divider"></div>
-
-        <div class="tool-group">
-            <button id="btn-notes-toggle" title="Keep Notes"><i class="fas fa-sticky-note"></i></button>
-            <button id="btn-fullscreen" title="Full Screen"><i class="fas fa-expand"></i></button>
-        </div>
-
-        <div class="tool-divider"></div>
-
-        <div class="tool-group">
-            <button id="btn-undo" title="Undo"><i class="fas fa-undo"></i></button>
-            <button id="btn-redo" title="Redo"><i class="fas fa-redo"></i></button>
+        <!-- View Section -->
+        <div class="toolbar-section">
+            <div class="section-label">View</div>
+            <div class="section-content">
+                <button id="btn-scroll-up" title="Scroll Up"><i class="fas fa-arrow-up"></i></button>
+                <button id="btn-auto-scroll" title="Auto Scroll Down"><i class="fas fa-arrow-down"></i></button>
+                <input type="number" id="scroll-speed" min="1" max="100" value="2" title="Scroll Speed"
+                    style="width: 40px;">
+                <button id="btn-eye-comfort" title="Eye Comfort Mode"><i class="fas fa-eye"></i></button>
+                <input type="color" id="eye-comfort-color" value="#f5deb3" title="Eye Comfort Color"
+                    style="width: 25px; height: 25px; padding: 0; border: none; cursor: pointer;">
+                <button id="btn-fullscreen" title="Full Screen (F)"><i class="fas fa-expand"></i></button>
+                <button id="btn-notes-toggle" title="Keep Notes"><i class="fas fa-sticky-note"></i></button>
+            </div>
         </div>
     </div>
 
