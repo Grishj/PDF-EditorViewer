@@ -1,0 +1,38 @@
+{
+    "manifest_version": 3,
+    "name": "PDF Editor Pro",
+    "version": "1.0",
+    "description": "A powerful PDF editor with highlighting, drawing, and editing tools.",
+    "permissions": [
+        "activeTab",
+        "storage",
+        "downloads"
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Open PDF Editor"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "editor.html",
+                "lib/*",
+                "icons/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
+    }
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Editor</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Embed basic CSS here for now to ensure it loads immediately, moved to css/style.css later */
+    </style>
+</head>
+
+<body>
+
+    <div id="toolbar">
+        <div class="tool-group">
+            <button id="btn-open" title="Open PDF"><i class="fas fa-folder-open"></i></button>
+            <input type="file" id="file-input" accept="application/pdf" style="display: none;">
+            <button id="btn-save" title="Save PDF"><i class="fas fa-save"></i></button>
+            <button id="btn-share" title="Share PDF"><i class="fas fa-share-alt"></i></button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+            <button class="tool-btn" id="tool-select" title="Select / Move"><i
+                    class="fas fa-mouse-pointer"></i></button>
+
+            <button class="tool-btn" id="tool-pen" title="Pen"><i class="fas fa-pen"></i></button>
+            <button class="tool-btn" id="tool-line" title="Straight Line"><i class="fas fa-slash"></i></button>
+            <button class="tool-btn" id="tool-highlighter" title="Highlighter"><i
+                    class="fas fa-highlighter"></i></button>
+            <button class="tool-btn" id="tool-text" title="Add Text"><i class="fas fa-font"></i></button>
+            <button class="tool-btn" id="tool-image" title="Add Image"><i class="fas fa-image"></i></button>
+            <input type="file" id="image-input" accept="image/*" style="display: none;">
+            <button class="tool-btn" id="tool-eraser" title="Eraser"><i class="fas fa-eraser"></i></button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+            <button id="btn-rotate-page" title="Rotate Page (90°)"><i class="fas fa-sync-alt"></i></button>
+            <button id="btn-rotate-all" title="Rotate All"><i class="fas fa-sync"></i></button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+            <input type="number" id="page-input" min="1" value="1" style="width: 50px;" title="Go to Page">
+            <span id="page-count">/ 0</span>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group options-panel">
+            <input type="color" id="color-picker" value="#000000" title="Color">
+            <input type="number" id="brush-size" min="1" max="50" value="2" title="Brush Size" style="width: 50px;">
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+            <button id="btn-scroll-up" title="Scroll Up"><i class="fas fa-arrow-up"></i></button>
+            <button id="btn-auto-scroll" title="Auto Scroll Down"><i class="fas fa-arrow-down"></i></button>
+            <input type="number" id="scroll-speed" min="1" max="100" value="2" title="Scroll Speed"
+                style="width: 50px;">
+
+            <div class="tool-divider"></div>
+
+            <button id="btn-eye-comfort" title="Eye Comfort Mode"><i class="fas fa-eye"></i></button>
+            <input type="color" id="eye-comfort-color" value="#f5deb3" title="Eye Comfort Color"
+                style="width: 30px; padding: 0; border: none; height: 30px; cursor: pointer;">
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+            <button id="btn-notes-toggle" title="Keep Notes"><i class="fas fa-sticky-note"></i></button>
+            <button id="btn-fullscreen" title="Full Screen"><i class="fas fa-expand"></i></button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+            <button id="btn-undo" title="Undo"><i class="fas fa-undo"></i></button>
+            <button id="btn-redo" title="Redo"><i class="fas fa-redo"></i></button>
+        </div>
+    </div>
+
+    <div id="notes-panel" class="hidden">
+        <div class="notes-header">
+            <span>My Notes</span>
+            <button id="btn-notes-close"><i class="fas fa-times"></i></button>
+        </div>
+        <textarea id="notes-area" placeholder="Type your notes here..."></textarea>
+    </div>
+
+
+
+    <div id="main-container">
+        <div id="pdf-container">
+            <!-- Canvas pages will be injected here -->
+        </div>
+    </div>
+
+    <div id="eye-comfort-overlay"></div>
+
+    <!-- Libraries -->
+    <script src="lib/pdf.min.js"></script>
+    <script src="lib/fabric.min.js"></script>
+    <script src="lib/jspdf.umd.min.js"></script>
+
+    <!-- App Logic -->
+    <script src="js/editor.js"></script>
+</body>
+
+</html>

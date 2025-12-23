@@ -1,0 +1,204 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#toolbar {
+    height: 50px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.tool-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tool-divider {
+    width: 1px;
+    height: 30px;
+    background-color: #ddd;
+    margin: 0 10px;
+}
+
+button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    color: #444;
+    transition: background 0.2s;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #e0e0e0;
+}
+
+button.active {
+    background-color: #d0eaff;
+    color: #007bff;
+}
+
+#main-container {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-color: #525659;
+    /* Standard PDF viewer grey */
+}
+
+#pdf-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.page-wrapper {
+    position: relative;
+    background-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+}
+
+#eye-comfort-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    display: none;
+    opacity: 0.3;
+}
+
+/* Updated Eye Comfort Logic uses overlay instead of filter on container */
+/* But we keep the class on body to toggle state */
+.eye-comfort-mode #eye-comfort-overlay {
+    display: block;
+}
+
+.pdf-canvas {
+    display: block;
+}
+
+.upper-canvas {
+    /* Fabric.js upper canvas - no specific styles needed yet */
+    z-index: 10;
+}
+
+/* Notes Panel */
+#notes-panel {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    width: 300px;
+    height: 400px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+#notes-panel.hidden {
+    display: none;
+}
+
+.notes-header {
+    padding: 10px;
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#notes-area {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    background-color: #fff;
+}
+
+#btn-notes-close {
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+/* Active states for scroll buttons */
+#btn-scroll-up.active,
+#btn-auto-scroll.active {
+    background-color: #d0eaff;
+    color: #007bff;
+}
+
+/* Text Layer */
+.textLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.2;
+    /* Make selection visible */
+    line-height: 1.0;
+    z-index: 5;
+    /* Below Fabric (10) but above PDF (0) ? No, needs to be accessible. */
+}
+
+/* 
+   If Fabric is z-index 10, it covers text layer. 
+   When "Text Select" mode is valid, we'll set pointer-events: none on Fabric 
+   so clicks pass through to text layer. 
+*/
+
+.textLayer>span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+::selection {
+    background: rgba(0, 0, 255, 0.3);
+}
+
+/* Highlight Menu */
+
+input[type="number"] {
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px;
+    color: #333;
+}
