@@ -16,6 +16,8 @@ A feature-rich Google Chrome extension for viewing, editing, and annotating PDF 
 - **Line Tool**: Draw perfectly straight lines for underlining or diagrams.
 - **Highlighter**: Transparent marker for emphasizing important text.
 - **Text Tool**: Click anywhere to type and add text labels.
+    - *Font Selection*: Choose from Arial, Times New Roman, Courier New, and more.
+    - *Color & Size*: Fully customizable.
 - **Image Insertion**: Embed images (JPG, PNG) directly onto PDF pages.
 - **Eraser**: Click on any annotation to remove it.
 - **Undo/Redo**: Full history support to safely revert or re-apply changes.
@@ -23,6 +25,7 @@ A feature-rich Google Chrome extension for viewing, editing, and annotating PDF 
 ### 🔄 Page Management
 - **Rotate Page**: Rotate the current page 90 degrees clockwise.
 - **Rotate All**: Rotate the entire document 90 degrees clockwise.
+- **Insert Blank Page**: Add a new white page anywhere in the document for extra notes or drawings.
 - **Navigation**: Jump directly to any page number using the input field.
 
 ### 👓 Viewing Experience

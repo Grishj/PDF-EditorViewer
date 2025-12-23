@@ -24,6 +24,7 @@ const tools = {
 const imageInput = document.getElementById('image-input');
 const rotatePageBtn = document.getElementById('btn-rotate-page');
 const rotateAllBtn = document.getElementById('btn-rotate-all');
+const insertPageBtn = document.getElementById('btn-insert-page');
 const pageInput = document.getElementById('page-input');
 const pageCountSpan = document.getElementById('page-count');
 
@@ -33,6 +34,7 @@ let pagesState = []; // Store canvas and fabric instances for each page: { pdfCa
 let currentTool = 'select'; // select, pen, highlighter, text, eraser, image
 let currentColor = '#000000';
 let currentBrushSize = 2;
+let currentFont = 'Arial'; // Default font
 
 // --- Initialization ---
 
@@ -173,6 +175,127 @@ async function renderPage(pageNum, rotation = 0) {
     setTool(currentTool, fCanvas);
 }
 
+// --- Insert Blank Page ---
+
+insertPageBtn.addEventListener('click', () => {
+    // Insert after the currently viewed page (or last page if undefined)
+    // For simplicity, let's insert after the page specified in pageInput
+    let targetPageNum = parseInt(pageInput.value, 10);
+    if (!targetPageNum || targetPageNum < 1) targetPageNum = pagesState.length;
+
+    insertBlankPage(targetPageNum);
+});
+
+async function insertBlankPage(afterPageNum) {
+    const newPageNum = afterPageNum + 1;
+
+    // Create wrapper
+    const pageWrapper = document.createElement('div');
+    pageWrapper.id = `page-wrapper-${Date.now()}`; // Temporary ID to avoid collision until re-indexed? 
+    // Actually need to re-render or re-order DOM.
+    pageWrapper.className = 'page-wrapper';
+
+    // Determine size (copy from previous page or default A4)
+    let width = 600;
+    let height = 800;
+    if (pagesState.length > 0) {
+        const refPage = pagesState[afterPageNum - 1] || pagesState[0];
+        width = refPage.pdfCanvas.width;
+        height = refPage.pdfCanvas.height;
+    }
+
+    pageWrapper.style.width = `${width}px`;
+    pageWrapper.style.height = `${height}px`;
+    pageWrapper.style.marginBottom = '20px';
+
+    // 1. Fake "PDF" canvas (white background)
+    const pdfCanvas = document.createElement('canvas');
+    pdfCanvas.className = 'pdf-canvas';
+    pdfCanvas.width = width;
+    pdfCanvas.height = height;
+    const ctx = pdfCanvas.getContext('2d');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+    pageWrapper.appendChild(pdfCanvas);
+
+    // 2. Fabric Canvas
+    const fabricCanvasEl = document.createElement('canvas');
+    fabricCanvasEl.className = 'fabric-canvas';
+    fabricCanvasEl.width = width;
+    fabricCanvasEl.height = height;
+    pageWrapper.appendChild(fabricCanvasEl);
+
+    // 3. Text Layer (empty but needed for structure consistency if we were reusing code, mostly optional for blank)
+    const textLayerDiv = document.createElement('div');
+    textLayerDiv.className = 'textLayer';
+    textLayerDiv.style.width = '${width}px';
+    textLayerDiv.style.height = '${height}px';
+    pageWrapper.appendChild(textLayerDiv);
+
+    // Insert into DOM
+    const refWrapper = document.getElementById(`page-wrapper-${afterPageNum}`); // Wrapper IDs are currently 1-based index based
+    // Limitation: My renderPage logic uses ID based on page number.
+    // If I insert a page, I need to shift all subsequent page IDs? 
+    // Or just append to pagesState and re-render everything? Re-rendering might be slow.
+    // Let's insert into DOM and update pagesState, then re-assign page numbers.
+
+    if (refWrapper && refWrapper.nextSibling) {
+        pdfContainer.insertBefore(pageWrapper, refWrapper.nextSibling);
+    } else {
+        pdfContainer.appendChild(pageWrapper);
+    }
+
+    const fCanvas = new fabric.Canvas(fabricCanvasEl, {
+        width: width,
+        height: height,
+        selection: false
+    });
+
+    // Fix position
+    const upperCanvas = fCanvas.getElement().parentNode;
+    upperCanvas.style.position = 'absolute';
+    upperCanvas.style.top = '0';
+    upperCanvas.style.left = '0';
+
+    const newState = {
+        pdfCanvas,
+        fCanvas,
+        pageNum: newPageNum, // Temp, needs re-index
+        rotation: 0,
+        type: 'blank'
+    };
+
+    // Insert into State
+    pagesState.splice(afterPageNum, 0, newState);
+
+    // Re-index all pages
+    reindexPages();
+
+    // Initialize tool
+    hookCanvasEvents(fCanvas, newPageNum);
+    initLineToolEvents(fCanvas);
+    setTool(currentTool, fCanvas);
+
+    // Update visuals
+    pageCountSpan.textContent = `/ ${pagesState.length}`;
+    pageInput.max = pagesState.length;
+    pageInput.value = newPageNum;
+
+    pageWrapper.scrollIntoView({ behavior: 'smooth' });
+}
+
+function reindexPages() {
+    pagesState.forEach((p, index) => {
+        p.pageNum = index + 1;
+        // Update DOM ID if possible
+        const wrapper = p.pdfCanvas.closest('.page-wrapper');
+        if (wrapper) {
+            wrapper.id = `page-wrapper-${p.pageNum}`;
+            wrapper.setAttribute('data-page-number', p.pageNum);
+        }
+    });
+}
+
 // --- Undo / Redo ---
 
 const undoStack = [];
@@ -306,24 +429,27 @@ function setTool(toolName, canvas) {
         });
         canvas.forEachObject(o => o.selectable = false);
     } else if (toolName === 'text') {
-        // ... (rest of text tool)
         canvas.defaultCursor = 'text';
-        canvas.on('mouse:down', function (options) {
-            if (currentTool === 'text' && !options.target) {
-                const pointer = canvas.getPointer(options.e);
-                const text = new fabric.IText('Type here', {
-                    left: pointer.x,
-                    top: pointer.y,
-                    fontFamily: 'Arial',
-                    fill: currentColor,
-                    fontSize: 20
-                });
-                canvas.add(text);
-                canvas.setActiveObject(text);
-                text.enterEditing();
-                text.selectAll();
-                setAllCanvasesTool('select');
-            }
+        canvas.on('mouse:down', (o) => {
+            if (currentTool !== 'text') return;
+            const pointer = canvas.getPointer(o.e);
+
+            // Allow default editing if clicking existing text
+            if (o.target && o.target.type === 'i-text') return;
+
+            // Otherwise create new text
+            const text = new fabric.IText('Type here', {
+                left: pointer.x,
+                top: pointer.y,
+                fontFamily: currentFont,
+                fill: currentColor,
+                fontSize: 20
+            });
+            canvas.add(text);
+            canvas.setActiveObject(text);
+            text.enterEditing();
+            text.selectAll();
+            setAllCanvasesTool('select'); // Switch to select to type immediately without creating more boxes
         });
         canvas.forEachObject(o => o.selectable = false);
     } else if (toolName === 'image') {
@@ -370,6 +496,8 @@ Object.keys(tools).forEach(key => {
     });
 });
 
+// --- Tool Settings Events ---
+
 colorPicker.addEventListener('input', (e) => {
     currentColor = e.target.value;
     updateBrushSettings();
@@ -378,6 +506,19 @@ colorPicker.addEventListener('input', (e) => {
 brushSize.addEventListener('change', (e) => {
     currentBrushSize = e.target.value;
     updateBrushSettings();
+});
+
+const fontFamilySelect = document.getElementById('font-family');
+fontFamilySelect.addEventListener('change', (e) => {
+    currentFont = e.target.value;
+    // Update active object if it is text
+    pagesState.forEach(p => {
+        const activeObj = p.fCanvas.getActiveObject();
+        if (activeObj && activeObj.type === 'i-text') {
+            activeObj.set('fontFamily', currentFont);
+            p.fCanvas.requestRenderAll();
+        }
+    });
 });
 
 function updateBrushSettings() {
@@ -691,45 +832,79 @@ fullscreenBtn.addEventListener('click', () => {
 
 // --- Save / Export ---
 
+// --- Helper Functions ---
+
+function loadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
 // --- Save / Export / Share ---
 
 async function generatePDFBlob() {
     const { jsPDF } = window.jspdf;
     if (pagesState.length === 0) return null;
 
-    const firstPage = pagesState[0];
+    // Get dimensions of the first page to initialize PDF
+    // For 'blank' pages, pdfCanvas might be 0x0 or uninitialized if we relied on pdf.js viewport. 
+    // But in insertBlankPage we create a 'pdfCanvas' with correct width/height and fill it white.
+    // So accessing .width and .height should be fine IF pdfCanvas is valid.
+    // Let's ensure we use the wrapper or fabric canvas dimensions as backup.
+
+    // First page setup
+    const firstState = pagesState[0];
+    const firstW = firstState.pdfCanvas.width;
+    const firstH = firstState.pdfCanvas.height;
+
     const pdf = new jsPDF({
-        orientation: firstPage.pdfCanvas.width > firstPage.pdfCanvas.height ? 'l' : 'p',
+        orientation: firstW > firstH ? 'l' : 'p',
         unit: 'px',
-        format: [firstPage.pdfCanvas.width, firstPage.pdfCanvas.height]
+        format: [firstW, firstH]
     });
 
     for (let i = 0; i < pagesState.length; i++) {
+        const state = pagesState[i];
+        const w = state.pdfCanvas.width;
+        const h = state.pdfCanvas.height;
+
         if (i > 0) {
-            const w = pagesState[i].pdfCanvas.width;
-            const h = pagesState[i].pdfCanvas.height;
             pdf.addPage([w, h]);
         }
 
-        const state = pagesState[i];
+        // Use the current page as default for subsequent content operations
+        pdf.setPage(i + 1);
 
         // 1. Draw PDF base to a temp canvas
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = state.pdfCanvas.width;
-        tempCanvas.height = state.pdfCanvas.height;
+        tempCanvas.width = w;
+        tempCanvas.height = h;
         const ctx = tempCanvas.getContext('2d');
 
-        // Draw underlying PDF
-        ctx.drawImage(state.pdfCanvas, 0, 0);
+        // Draw underlying PDF (or White background for blank pages)
+        if (state.type === 'blank') {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+        } else {
+            // Check if pdfCanvas is valid/loaded
+            if (state.pdfCanvas) {
+                ctx.drawImage(state.pdfCanvas, 0, 0);
+            }
+        }
 
         // Draw Fabric overlay
+        // NOTE: toDataURL is synchronous for standard canvases, but if we have external images 
+        // we might need to be careful. But fabric usually handles this well.
         const fabricData = state.fCanvas.toDataURL({ format: 'png', multiplier: 1 });
         const fabricImg = await loadImage(fabricData);
         ctx.drawImage(fabricImg, 0, 0);
 
         // Add to PDF
         const mergedData = tempCanvas.toDataURL('image/jpeg', 0.8);
-        pdf.addImage(mergedData, 'JPEG', 0, 0, state.pdfCanvas.width, state.pdfCanvas.height);
+        pdf.addImage(mergedData, 'JPEG', 0, 0, w, h);
     }
 
     return pdf.output('blob');
@@ -832,7 +1007,9 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             document.getElementById('btn-redo').click();
         } else if (key === 's') {
+            // CRITICAL: Prevent default browser "Save As" behavior
             e.preventDefault();
+            e.stopPropagation(); // Stop bubbling just in case
             document.getElementById('btn-save').click();
         }
     }
