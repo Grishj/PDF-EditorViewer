@@ -779,3 +779,75 @@ shareBtn.addEventListener('click', async () => {
 
 // --- Text Selection & Highlighting ---
 
+
+// --- Keyboard Shortcuts ---
+
+document.addEventListener('keydown', (e) => {
+    // Ignore if typing in an input or textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+    }
+
+    const key = e.key.toLowerCase();
+    const isCtrl = e.ctrlKey || e.metaKey;
+
+    // Tools
+    if (!isCtrl) {
+        switch (key) {
+            case 'v':
+            case 's':
+                setAllCanvasesTool('select');
+                break;
+            case 'p':
+                setAllCanvasesTool('pen');
+                break;
+            case 'l':
+                setAllCanvasesTool('line');
+                break;
+            case 'h':
+                setAllCanvasesTool('highlighter');
+                break;
+            case 'e':
+                setAllCanvasesTool('eraser');
+                break;
+            case 't':
+                setAllCanvasesTool('text');
+                break;
+            case 'delete':
+            case 'backspace':
+                deleteSelectedObjects();
+                break;
+            case 'escape':
+                setAllCanvasesTool('select');
+                break;
+        }
+    }
+
+    // Actions
+    if (isCtrl) {
+        if (key === 'z') {
+            e.preventDefault();
+            document.getElementById('btn-undo').click();
+        } else if (key === 'y') {
+            e.preventDefault();
+            document.getElementById('btn-redo').click();
+        } else if (key === 's') {
+            e.preventDefault();
+            document.getElementById('btn-save').click();
+        }
+    }
+});
+
+function deleteSelectedObjects() {
+    pagesState.forEach(p => {
+        const activeObj = p.fCanvas.getActiveObject();
+        if (activeObj) {
+            // If it's a text object currently being edited, don't delete
+            if (activeObj.isEditing) return;
+
+            p.fCanvas.remove(activeObj);
+            // Trigger undo/redo stack update
+            p.fCanvas.fire('object:removed', { target: activeObj });
+        }
+    });
+}

@@ -38,6 +38,20 @@ A feature-rich Google Chrome extension for viewing, editing, and annotating PDF 
     - *Auto-Save*: Notes are automatically saved to your browser's local storage.
     - *File-Specific*: Notes are unique to each opened PDF file, ensuring your thoughts don't get mixed up.
 
+### ⌨️ Keyboard Shortcuts
+| Key | Action |
+| :--- | :--- |
+| **V** or **S** | Select Tool |
+| **P** | Pen Tool |
+| **L** | Line Tool |
+| **H** | Highlighter |
+| **E** | Eraser |
+| **T** | Text Tool |
+| **Ctrl + Z** | Undo |
+| **Ctrl + Y** | Redo |
+| **Ctrl + S** | Save PDF |
+| **Delete** | Remove Selected Object |
+
 ## Installation
 
 1.  Clone or download this repository.
