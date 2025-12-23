@@ -16,6 +16,11 @@
 <body>
 
     <div id="toolbar">
+        <!-- Sidebar Toggle -->
+        <div class="toolbar-section" style="padding: 6px 8px;">
+            <button id="btn-toggle-sidebar" title="Toggle Sidebar"><i class="fas fa-columns"></i></button>
+        </div>
+
         <!-- File Section -->
         <div class="toolbar-section">
             <div class="section-label">File</div>
@@ -33,6 +38,7 @@
             <div class="section-content">
                 <button id="btn-undo" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
                 <button id="btn-redo" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                <button id="btn-find-toggle" title="Find in Document (Ctrl+F)"><i class="fas fa-search"></i></button>
             </div>
         </div>
 
@@ -94,9 +100,18 @@
         <div class="toolbar-section">
             <div class="section-label">View</div>
             <div class="section-content">
+                <button id="btn-zoom-out" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                <span id="zoom-level" style="font-size: 12px; width: 40px; text-align: center;">100%</span>
+                <button id="btn-zoom-in" title="Zoom In"><i class="fas fa-plus"></i></button>
+
+                <span style="border-left: 1px solid #ccc; height: 24px; margin: 0 4px;"></span>
+
                 <button id="btn-scroll-up" title="Scroll Up"><i class="fas fa-arrow-up"></i></button>
                 <button id="btn-auto-scroll" title="Auto Scroll Down"><i class="fas fa-arrow-down"></i></button>
                 <input type="number" id="scroll-speed" min="1" max="100" value="2" title="Scroll Speed"
+                    style="width: 40px;">
+                <span style="border-left: 1px solid #ccc; height: 24px; margin: 0 4px;"></span>
+                <input type="number" id="view-columns" min="1" max="4" value="1" title="Pages per Row"
                     style="width: 40px;">
                 <button id="btn-eye-comfort" title="Eye Comfort Mode"><i class="fas fa-eye"></i></button>
                 <input type="color" id="eye-comfort-color" value="#f5deb3" title="Eye Comfort Color"
@@ -107,6 +122,15 @@
         </div>
     </div>
 
+    <!-- Find Bar -->
+    <div id="find-bar" class="hidden">
+        <input type="text" id="find-input" placeholder="Find in document...">
+        <button id="find-prev" title="Previous"><i class="fas fa-chevron-up"></i></button>
+        <button id="find-next" title="Next"><i class="fas fa-chevron-down"></i></button>
+        <span id="find-count"></span>
+        <button id="find-close"><i class="fas fa-times"></i></button>
+    </div>
+
     <div id="notes-panel" class="hidden">
         <div class="notes-header">
             <span>My Notes</span>
@@ -115,11 +139,16 @@
         <textarea id="notes-area" placeholder="Type your notes here..."></textarea>
     </div>
 
+    <!-- App Body (Sidebar + Main) -->
+    <div id="app-body">
+        <div id="sidebar" class="hidden">
+            <!-- Thumbnails injected here -->
+        </div>
 
-
-    <div id="main-container">
-        <div id="pdf-container">
-            <!-- Canvas pages will be injected here -->
+        <div id="main-container">
+            <div id="pdf-container">
+                <!-- Canvas pages will be injected here -->
+            </div>
         </div>
     </div>
 

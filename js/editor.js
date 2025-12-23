@@ -73,6 +73,8 @@ async function loadPDF(file) {
         for (let i = 1; i <= currentPDF.numPages; i++) {
             await renderPage(i, 0); // initial rotation 0
         }
+        updateGridLayout();
+        generateThumbnails();
     } catch (error) {
         console.error('Error rendering PDF:', error);
         alert('Error parsing PDF file: ' + (error.message || error));
@@ -96,16 +98,29 @@ async function renderPage(pageNum, rotation = 0) {
         pageWrapper.innerHTML = ''; // Clear existing content
     }
 
+    // We use an inner container for scaling content while maintaining layout bounds
+    const pageContent = document.createElement('div');
+    pageContent.className = 'page-content';
+    pageContent.style.width = `${viewport.width}px`;
+    pageContent.style.height = `${viewport.height}px`;
+    pageContent.style.position = 'relative'; // Ensure absolute children position relative to this
+    pageWrapper.appendChild(pageContent);
+
+    // Initial Layout sizing (will be updated by layout manager)
     pageWrapper.style.width = `${viewport.width}px`;
     pageWrapper.style.height = `${viewport.height}px`;
     pageWrapper.style.marginBottom = '20px';
+
+    // Store original dimensions for scaling
+    pageWrapper.dataset.originalWidth = viewport.width;
+    pageWrapper.dataset.originalHeight = viewport.height;
 
     // Create Canvas for PDF content
     const pdfCanvas = document.createElement('canvas');
     pdfCanvas.className = 'pdf-canvas';
     pdfCanvas.width = viewport.width;
     pdfCanvas.height = viewport.height;
-    pageWrapper.appendChild(pdfCanvas);
+    pageContent.appendChild(pdfCanvas);
 
     // Render PDF to canvas
     const context = pdfCanvas.getContext('2d');
@@ -116,19 +131,18 @@ async function renderPage(pageNum, rotation = 0) {
     await page.render(renderContext).promise;
 
     // Create Canvas for Fabric.js (Annotation layer)
-    // Create Canvas for Fabric.js (Annotation layer)
     const fabricCanvasEl = document.createElement('canvas');
     fabricCanvasEl.className = 'fabric-canvas';
     fabricCanvasEl.width = viewport.width;
     fabricCanvasEl.height = viewport.height;
-    pageWrapper.appendChild(fabricCanvasEl);
+    pageContent.appendChild(fabricCanvasEl);
 
     // Create Text Layer
     const textLayerDiv = document.createElement('div');
     textLayerDiv.className = 'textLayer';
     textLayerDiv.style.width = `${viewport.width}px`;
     textLayerDiv.style.height = `${viewport.height}px`;
-    pageWrapper.appendChild(textLayerDiv);
+    pageContent.appendChild(textLayerDiv);
 
     // Render Text Layer
     page.getTextContent().then(textContent => {
@@ -191,8 +205,7 @@ async function insertBlankPage(afterPageNum) {
 
     // Create wrapper
     const pageWrapper = document.createElement('div');
-    pageWrapper.id = `page-wrapper-${Date.now()}`; // Temporary ID to avoid collision until re-indexed? 
-    // Actually need to re-render or re-order DOM.
+    pageWrapper.id = `page-wrapper-${Date.now()}`;
     pageWrapper.className = 'page-wrapper';
 
     // Determine size (copy from previous page or default A4)
@@ -204,9 +217,21 @@ async function insertBlankPage(afterPageNum) {
         height = refPage.pdfCanvas.height;
     }
 
+    // We use an inner container for scaling content
+    const pageContent = document.createElement('div');
+    pageContent.className = 'page-content';
+    pageContent.style.width = `${width}px`;
+    pageContent.style.height = `${height}px`;
+    pageContent.style.position = 'relative';
+    pageWrapper.appendChild(pageContent);
+
     pageWrapper.style.width = `${width}px`;
     pageWrapper.style.height = `${height}px`;
     pageWrapper.style.marginBottom = '20px';
+
+    // Store original dimensions for scaling
+    pageWrapper.dataset.originalWidth = width;
+    pageWrapper.dataset.originalHeight = height;
 
     // 1. Fake "PDF" canvas (white background)
     const pdfCanvas = document.createElement('canvas');
@@ -216,29 +241,24 @@ async function insertBlankPage(afterPageNum) {
     const ctx = pdfCanvas.getContext('2d');
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, width, height);
-    pageWrapper.appendChild(pdfCanvas);
+    pageContent.appendChild(pdfCanvas);
 
     // 2. Fabric Canvas
     const fabricCanvasEl = document.createElement('canvas');
     fabricCanvasEl.className = 'fabric-canvas';
     fabricCanvasEl.width = width;
     fabricCanvasEl.height = height;
-    pageWrapper.appendChild(fabricCanvasEl);
+    pageContent.appendChild(fabricCanvasEl);
 
-    // 3. Text Layer (empty but needed for structure consistency if we were reusing code, mostly optional for blank)
+    // 3. Text Layer
     const textLayerDiv = document.createElement('div');
     textLayerDiv.className = 'textLayer';
-    textLayerDiv.style.width = '${width}px';
-    textLayerDiv.style.height = '${height}px';
-    pageWrapper.appendChild(textLayerDiv);
+    textLayerDiv.style.width = `${width}px`;
+    textLayerDiv.style.height = `${height}px`;
+    pageContent.appendChild(textLayerDiv);
 
     // Insert into DOM
-    const refWrapper = document.getElementById(`page-wrapper-${afterPageNum}`); // Wrapper IDs are currently 1-based index based
-    // Limitation: My renderPage logic uses ID based on page number.
-    // If I insert a page, I need to shift all subsequent page IDs? 
-    // Or just append to pagesState and re-render everything? Re-rendering might be slow.
-    // Let's insert into DOM and update pagesState, then re-assign page numbers.
-
+    const refWrapper = document.getElementById(`page-wrapper-${afterPageNum}`);
     if (refWrapper && refWrapper.nextSibling) {
         pdfContainer.insertBefore(pageWrapper, refWrapper.nextSibling);
     } else {
@@ -260,7 +280,7 @@ async function insertBlankPage(afterPageNum) {
     const newState = {
         pdfCanvas,
         fCanvas,
-        pageNum: newPageNum, // Temp, needs re-index
+        pageNum: newPageNum,
         rotation: 0,
         type: 'blank'
     };
@@ -268,6 +288,7 @@ async function insertBlankPage(afterPageNum) {
     // Insert into State
     pagesState.splice(afterPageNum, 0, newState);
 
+    // Re-index all pages
     // Re-index all pages
     reindexPages();
 
@@ -279,9 +300,11 @@ async function insertBlankPage(afterPageNum) {
     // Update visuals
     pageCountSpan.textContent = `/ ${pagesState.length}`;
     pageInput.max = pagesState.length;
-    pageInput.value = newPageNum;
 
+    pageInput.value = newPageNum;
     pageWrapper.scrollIntoView({ behavior: 'smooth' });
+
+    updateGridLayout();
 }
 
 function reindexPages() {
@@ -601,6 +624,7 @@ rotatePageBtn.addEventListener('click', async () => {
     if (pageState) {
         const newRotation = (pageState.rotation + 90) % 360;
         await renderPage(targetPage, newRotation);
+        updateGridLayout();
     }
 });
 
@@ -609,6 +633,7 @@ rotateAllBtn.addEventListener('click', async () => {
         const newRotation = (pageState.rotation + 90) % 360;
         await renderPage(pageState.pageNum, newRotation);
     }
+    updateGridLayout();
 });
 
 // --- Page Navigation ---
@@ -693,8 +718,10 @@ const notesPanel = document.getElementById('notes-panel');
 const notesCloseBtn = document.getElementById('btn-notes-close');
 const notesArea = document.getElementById('notes-area');
 
-let autoScrollInterval = null;
+let autoScrollFrameId = null;
 let autoScrollDirection = 1; // 1 for down, -1 for up
+let scrollAccumulator = 0;
+let lastScrollTime = 0;
 
 autoScrollBtn.addEventListener('click', () => {
     toggleAutoScroll(1);
@@ -705,7 +732,7 @@ scrollUpBtn.addEventListener('click', () => {
 });
 
 function toggleAutoScroll(direction) {
-    if (autoScrollInterval && autoScrollDirection === direction) {
+    if (autoScrollFrameId && autoScrollDirection === direction) {
         // Stop if clicking the same active direction
         stopAutoScroll();
     } else {
@@ -717,24 +744,44 @@ function toggleAutoScroll(direction) {
 }
 
 function stopAutoScroll() {
-    if (autoScrollInterval) clearInterval(autoScrollInterval);
-    autoScrollInterval = null;
+    if (autoScrollFrameId) cancelAnimationFrame(autoScrollFrameId);
+    autoScrollFrameId = null;
     updateAutoScrollUI();
 }
 
 function startAutoScroll() {
-    if (autoScrollInterval) clearInterval(autoScrollInterval);
-    const speed = parseInt(scrollSpeedInput.value, 10);
-    const intervalTime = 50;
+    if (autoScrollFrameId) cancelAnimationFrame(autoScrollFrameId);
 
-    autoScrollInterval = setInterval(() => {
-        const container = document.getElementById('main-container');
-        container.scrollTop += (speed * autoScrollDirection);
-    }, intervalTime);
+    scrollAccumulator = 0;
+    lastScrollTime = performance.now();
+
+    const step = (timestamp) => {
+        // Ensure regular time updates
+        const deltaTime = timestamp - lastScrollTime;
+        lastScrollTime = timestamp;
+
+        const speed = parseInt(scrollSpeedInput.value, 10);
+        // Old rate: speed px / 50ms => speed * 20 px/s
+        const pxPerSec = speed * 20;
+
+        const move = (pxPerSec * deltaTime) / 1000;
+        scrollAccumulator += (move * autoScrollDirection);
+
+        const pixelsToApply = Math.trunc(scrollAccumulator);
+        if (pixelsToApply !== 0) {
+            const container = document.getElementById('main-container');
+            container.scrollTop += pixelsToApply;
+            scrollAccumulator -= pixelsToApply;
+        }
+
+        autoScrollFrameId = requestAnimationFrame(step);
+    };
+
+    autoScrollFrameId = requestAnimationFrame(step);
 }
 
 function updateAutoScrollUI() {
-    if (autoScrollInterval) {
+    if (autoScrollFrameId) {
         if (autoScrollDirection === 1) {
             autoScrollBtn.classList.add('active');
             scrollUpBtn.classList.remove('active');
@@ -755,9 +802,7 @@ function updateAutoScrollUI() {
 }
 
 scrollSpeedInput.addEventListener('change', () => {
-    if (autoScrollInterval) {
-        startAutoScroll();
-    }
+    // Dynamic speed update handled in animation loop
 });
 
 // --- Notes Logic ---
@@ -903,7 +948,8 @@ async function generatePDFBlob() {
         ctx.drawImage(fabricImg, 0, 0);
 
         // Add to PDF
-        const mergedData = tempCanvas.toDataURL('image/jpeg', 0.8);
+        // Optimize: Quality reduced to 0.75 for better performance
+        const mergedData = tempCanvas.toDataURL('image/jpeg', 0.75);
         pdf.addImage(mergedData, 'JPEG', 0, 0, w, h);
     }
 
@@ -911,28 +957,34 @@ async function generatePDFBlob() {
 }
 
 saveBtn.addEventListener('click', async () => {
-    const pdfBlob = await generatePDFBlob();
-    if (!pdfBlob) return;
+    try {
+        const pdfBlob = await generatePDFBlob();
+        if (!pdfBlob) return;
 
-    // Download logic
-    const url = URL.createObjectURL(pdfBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'edited_document.pdf';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+        // Download logic
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'edited_document.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error("Error saving PDF:", err);
+        alert("Failed to save PDF. See console for details.");
+    }
 });
 
 const shareBtn = document.getElementById('btn-share');
 shareBtn.addEventListener('click', async () => {
-    const pdfBlob = await generatePDFBlob();
-    if (!pdfBlob) return;
+    try {
+        const pdfBlob = await generatePDFBlob();
+        if (!pdfBlob) return;
 
-    if (navigator.share && navigator.canShare) {
         const file = new File([pdfBlob], 'edited_document.pdf', { type: 'application/pdf' });
-        if (navigator.canShare({ files: [file] })) {
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
                     files: [file],
@@ -942,14 +994,35 @@ shareBtn.addEventListener('click', async () => {
                 console.log('Shared successfully');
             } catch (error) {
                 console.error('Error sharing:', error);
+                if (error.name !== 'AbortError') {
+                    // Start download fallback if share failed (and wasn't cancelled by user)
+                    if (confirm("Sharing failed. Do you want to download the file instead?")) {
+                        downloadFile(file);
+                    }
+                }
             }
         } else {
-            alert('Your browser supports sharing but not for this file type.');
+            // Fallback for browsers that don't support sharing files
+            if (confirm("Your browser doesn't support sharing files directly. Download the file instead?")) {
+                downloadFile(file);
+            }
         }
-    } else {
-        alert('Web Share API is not supported in this browser/environment.');
+    } catch (err) {
+        console.error("Share error:", err);
+        alert("An error occurred while trying to share.");
     }
 });
+
+function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
 
 // --- Text Selection & Highlighting ---
@@ -1035,5 +1108,342 @@ function deleteSelectedObjects() {
             // Trigger undo/redo stack update
             p.fCanvas.fire('object:removed', { target: activeObj });
         }
+    });
+}
+
+// --- Grid View Logic ---
+
+const viewColumnsInput = document.getElementById('view-columns');
+// pdfContainer is already defined globally or earlier? 
+// Let's assume it is or get it. In main scope it is likely not defined as var unless I check.
+// Checking outline: Line 1 defines it?
+// Outline says: "pdfjsLib... const fileInput..."
+// Let's use document.getElementById inside function to be safe or define it if not.
+// Actually, earlier renderPage used `pdfContainer`, so it must be defined.
+// Checking view_file output from earlier (Line 50 of editor.js)
+// Line 58 involves `pdfContainer.innerHTML = ''`.
+// So it is available in scope.
+
+function updateGridLayout() {
+    const columns = parseInt(viewColumnsInput ? viewColumnsInput.value : 1, 10) || 1;
+    const pages = document.querySelectorAll('.page-wrapper');
+    const container = document.getElementById('pdf-container');
+
+    if (columns > 1) {
+        container.classList.add('grid-view');
+    } else {
+        container.classList.remove('grid-view');
+    }
+
+    if (container.clientWidth < 50) return;
+
+    const gap = 20;
+    const totalGap = (columns - 1) * gap;
+    const availableWidth = (container.clientWidth - totalGap) / columns;
+
+    pages.forEach(wrapper => {
+        const content = wrapper.querySelector('.page-content');
+        // Legacy check or if content is missing
+        if (!content) return;
+
+        const originalW = parseFloat(wrapper.dataset.originalWidth);
+        const originalH = parseFloat(wrapper.dataset.originalHeight);
+
+        if (!originalW || !originalH) return;
+
+        if (columns === 1) {
+            wrapper.style.width = originalW + 'px';
+            wrapper.style.height = originalH + 'px';
+            content.style.transform = 'none';
+            wrapper.style.marginBottom = '20px';
+        } else {
+            const scale = availableWidth / originalW;
+            content.style.transformOrigin = 'top left';
+            content.style.transform = `scale(${scale})`;
+
+            wrapper.style.width = `${originalW * scale}px`;
+            wrapper.style.height = `${originalH * scale}px`;
+            wrapper.style.marginBottom = '20px';
+        }
+    });
+}
+
+if (viewColumnsInput) {
+    viewColumnsInput.addEventListener('input', updateGridLayout);
+    viewColumnsInput.addEventListener('change', updateGridLayout);
+}
+window.addEventListener('resize', () => {
+    if (window.resizeTimeout) clearTimeout(window.resizeTimeout);
+    window.resizeTimeout = setTimeout(updateGridLayout, 100);
+});
+// --- Zoom Logic ---
+let currentZoom = 1; // 1 = 100%
+const zoomInBtn = document.getElementById('btn-zoom-in');
+const zoomOutBtn = document.getElementById('btn-zoom-out');
+const zoomLevelSpan = document.getElementById('zoom-level');
+
+zoomInBtn.addEventListener('click', () => {
+    updateZoom(0.1);
+});
+
+zoomOutBtn.addEventListener('click', () => {
+    updateZoom(-0.1);
+});
+
+function updateZoom(delta) {
+    let newZoom = currentZoom + delta;
+    newZoom = Math.max(0.2, Math.min(newZoom, 5.0)); // 20% to 500%
+    currentZoom = Math.round(newZoom * 10) / 10;
+
+    zoomLevelSpan.textContent = Math.round(currentZoom * 100) + '%';
+    updateGridLayout(); // Re-apply layout/scaling
+}
+
+
+// --- Sidebar / Thumbnails ---
+const sidebar = document.getElementById('sidebar');
+const toggleSidebarBtn = document.getElementById('btn-toggle-sidebar');
+
+toggleSidebarBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('hidden');
+});
+
+async function generateThumbnails() {
+    sidebar.innerHTML = ''; // Clear
+
+    // We can use pagesState or query PDF again?
+    // Using currentPDF for clean thumbnails is better (no edit overlay usually)
+    // But maybe user wants to see edits? generating from pagesState might be heavy if using toDataURL.
+    // Let's render small version from PDF source for speed.
+
+    for (let i = 1; i <= currentPDF.numPages; i++) {
+        const page = await currentPDF.getPage(i);
+        const viewport = page.getViewport({ scale: 0.2 }); // Small scale
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'thumbnail-wrapper';
+        wrapper.id = `thumbnail-${i}`;
+        wrapper.onclick = () => {
+            document.querySelectorAll('.thumbnail-wrapper').forEach(el => el.classList.remove('active'));
+            wrapper.classList.add('active');
+            pageInput.value = i;
+            pageInput.dispatchEvent(new Event('change')); // Trigger scroll
+        };
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'thumbnail-canvas';
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const context = canvas.getContext('2d');
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        const label = document.createElement('div');
+        label.className = 'thumbnail-label';
+        label.textContent = i;
+
+        wrapper.appendChild(canvas);
+        wrapper.appendChild(label);
+        sidebar.appendChild(wrapper);
+    }
+}
+
+
+// --- Find Feature ---
+const findToggleBtn = document.getElementById('btn-find-toggle');
+const findBar = document.getElementById('find-bar');
+const findInput = document.getElementById('find-input');
+const findPrevBtn = document.getElementById('find-prev');
+const findNextBtn = document.getElementById('find-next');
+const findCloseBtn = document.getElementById('find-close');
+const findCountSpan = document.getElementById('find-count');
+
+let searchMatches = []; // Array of span elements
+let currentMatchIndex = -1;
+
+findToggleBtn.addEventListener('click', () => {
+    findBar.classList.toggle('hidden');
+    if (!findBar.classList.contains('hidden')) {
+        findInput.focus();
+    }
+});
+
+findCloseBtn.addEventListener('click', () => {
+    findBar.classList.add('hidden');
+    clearFindHighlights();
+});
+
+findInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        performFind(findInput.value, e.shiftKey ? -1 : 1);
+    }
+});
+
+findNextBtn.addEventListener('click', () => performFind(findInput.value, 1));
+findPrevBtn.addEventListener('click', () => performFind(findInput.value, -1));
+
+function clearFindHighlights() {
+    searchMatches.forEach(span => {
+        // Restore original HTML or removing highlight class depends on implementation.
+        // If we wrapped text, unwrap. 
+        // Simpler: We will add .highlight-match class to text spans in textLayer.
+        // But textLayer spans text often changes.
+        // Actually, textLayer spans are persistent.
+        // But a match might span multiple spans? That's hard.
+        // Let's assume searching simple words within spans for v1.
+
+        // BETTER: Use window.find() for browser native?
+        // No, we want custom UI controls.
+
+        // Approach: Reset all spans in all textLayers.
+        document.querySelectorAll('.highlight-match').forEach(el => {
+            el.outerHTML = el.textContent; // Unwrap
+        });
+    });
+    searchMatches = [];
+    currentMatchIndex = -1;
+    findCountSpan.textContent = '';
+}
+
+function performFind(query, direction) {
+    if (!query) return;
+
+    // If new search (or dirty), re-scan
+    // Simple approach: clear all, find all, highlight all, jump to next.
+    // Optimization: check if query changed. 
+
+    // For this simple implementation: re-run every time.
+    clearFindHighlights();
+
+    if (!query) return;
+
+    // Iterate all textLayer spans
+    const spans = document.querySelectorAll('.textLayer > span');
+    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+    let matchCount = 0;
+
+    spans.forEach(span => {
+        const text = span.textContent;
+        if (regex.test(text)) {
+            // Found a span containing text. 
+            // Highlight entire span OR split it?
+            // Splitting is better visually but complex.
+            // Highlighting entire span is easy.
+            // Let's try simple highlighting of the span.
+            // Note: If span has "Hello World" and query is "World", highlighting whole thing is okayish?
+            // No, user wants precise. But let's start simple.
+
+            // To do precise:
+            // innerHTML replacement.
+            const newHTML = text.replace(regex, (match) => `<span class="highlight-match">${match}</span>`);
+            span.innerHTML = newHTML;
+            // Now find the newly created highlight-match elements
+            const highlighted = span.querySelectorAll('.highlight-match');
+            highlighted.forEach(m => searchMatches.push(m));
+        }
+    });
+
+    matchCount = searchMatches.length;
+    findCountSpan.textContent = matchCount > 0 ? `0 / ${matchCount}` : '0/0';
+
+    if (matchCount > 0) {
+        // Move index
+        if (currentMatchIndex === -1) {
+            currentMatchIndex = direction > 0 ? 0 : matchCount - 1;
+        } else {
+            currentMatchIndex = (currentMatchIndex + direction + matchCount) % matchCount;
+        }
+
+        const activeMatch = searchMatches[currentMatchIndex];
+
+        // Remove active class from all
+        document.querySelectorAll('.highlight-match.active').forEach(el => el.classList.remove('active'));
+
+        activeMatch.classList.add('active');
+        activeMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        findCountSpan.textContent = `${currentMatchIndex + 1} / ${matchCount}`;
+    } else {
+        alert('No matches found');
+    }
+}
+
+
+// --- Updated Grid Logic to include Zoom ---
+// Override/Extend updateGridLayout
+
+// We need to inject Zoom logic into updateGridLayout logic. 
+// I'll append a replacement for updateGridLayout at the end, replacing the previous one if it exists or just re-defining it.
+// Javascript allows re-definition if I assignment, but `function foo(){}` hoisting handles it.
+// Since I appended previously, I can append again and it will overwrite?
+// Actually, earlier I defined it. If I define it again, the last one wins?
+// Yes.
+
+function updateGridLayout() {
+    const columns = parseInt(viewColumnsInput ? viewColumnsInput.value : 1, 10) || 1;
+    const pages = document.querySelectorAll('.page-wrapper');
+    const container = document.getElementById('pdf-container');
+
+    if (!container) return;
+
+    if (columns > 1) {
+        container.classList.add('grid-view');
+    } else {
+        container.classList.remove('grid-view');
+    }
+
+    if (container.clientWidth < 50) return;
+
+    const gap = 20;
+    const totalGap = (columns - 1) * gap;
+
+    // Grid View Scale (ignoring manual Zoom usually, or applying it on top?)
+    // Standard PDF viewers: "Fit Width" usually disables Zoom, or Zoom becomes "Fit Width"
+    // Let's say: 
+    // If Columns = 1: Scale = currentZoom (1.0 = 100% of original).
+    // If Columns > 1: Scale = Fits container / columns. Zoom control might be disabled or ignored?
+    // Let's make Zoom active for Column=1 only for now, as that's safe.
+
+    let baseScale = 1;
+
+    if (columns === 1) {
+        // Use manual zoom
+        baseScale = currentZoom;
+    } else {
+        // Calculate fit-to-width scale
+        // We take the first page as reference or each page?
+        // We need to loop.
+    }
+
+    pages.forEach(wrapper => {
+        const content = wrapper.querySelector('.page-content');
+        if (!content) return;
+
+        const originalW = parseFloat(wrapper.dataset.originalWidth);
+        const originalH = parseFloat(wrapper.dataset.originalHeight);
+
+        if (!originalW || !originalH) return;
+
+        let scale = 1;
+
+        if (columns === 1) {
+            scale = currentZoom; // Simple zoom
+
+            // Check if zooming makes it wider than container?
+            // Overflow auto on main-container handles scroll.
+        } else {
+            const availableWidth = (container.clientWidth - totalGap) / columns;
+            scale = availableWidth / originalW;
+            // Update Zoom display to reflect this auto-scale? 
+            // Maybe not, keep it separate.
+        }
+
+        content.style.transformOrigin = 'top left';
+        content.style.transform = `scale(${scale})`;
+
+        wrapper.style.width = `${originalW * scale}px`;
+        wrapper.style.height = `${originalH * scale}px`;
+        wrapper.style.marginBottom = '20px';
     });
 }
